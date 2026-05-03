@@ -1,9 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Scissors, Download, Star, Hash, ChevronDown, ChevronUp, Subtitles } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  Loader2,
+  Scissors,
+  Download,
+  Star,
+  Hash,
+  ChevronDown,
+  ChevronUp,
+  ImageIcon,
+  X,
+} from "lucide-react";
 import { VideoClip, TranscriptSegment } from "@/types";
 import { cn } from "@/lib/utils";
+
+type VideoFormat = "9:16" | "16:9";
 
 interface ClipCardProps {
   clip: VideoClip;
@@ -15,13 +27,30 @@ interface ClipCardProps {
 export default function ClipCard({ clip, filePath, transcript, index }: ClipCardProps) {
   const [loading, setLoading] = useState(false);
   const [withSubtitles, setWithSubtitles] = useState(true);
+  const [format, setFormat] = useState<VideoFormat>("16:9");
+  const [overlayBase64, setOverlayBase64] = useState<string | null>(null);
+  const [overlayName, setOverlayName] = useState<string>("");
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const overlayInputRef = useRef<HTMLInputElement>(null);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
     return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const handleOverlayUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip data URL prefix, keep only base64
+      setOverlayBase64(result.split(",")[1]);
+      setOverlayName(file.name);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGenerate = async () => {
@@ -32,7 +61,14 @@ export default function ClipCard({ clip, filePath, transcript, index }: ClipCard
       const res = await fetch("/api/clip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath, clip, transcript, withSubtitles }),
+        body: JSON.stringify({
+          filePath,
+          clip,
+          transcript,
+          withSubtitles,
+          format,
+          overlayBase64,
+        }),
       });
 
       const data = await res.json();
@@ -146,13 +182,45 @@ export default function ClipCard({ clip, filePath, transcript, index }: ClipCard
         </div>
       )}
 
-      {/* Actions */}
-      <div className="border-t border-zinc-800 p-4 flex items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer select-none">
-          <div
+      {/* Options */}
+      <div className="border-t border-zinc-800 px-5 py-4 space-y-3">
+
+        {/* Format selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500 w-16 shrink-0">Formato</span>
+          <div className="flex rounded-lg overflow-hidden border border-zinc-700 text-xs">
+            <button
+              onClick={() => setFormat("16:9")}
+              className={cn(
+                "px-3 py-1.5 font-medium transition-colors",
+                format === "16:9"
+                  ? "bg-violet-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:text-white"
+              )}
+            >
+              16:9 Paisagem
+            </button>
+            <button
+              onClick={() => setFormat("9:16")}
+              className={cn(
+                "px-3 py-1.5 font-medium transition-colors",
+                format === "9:16"
+                  ? "bg-violet-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:text-white"
+              )}
+            >
+              9:16 Stories
+            </button>
+          </div>
+        </div>
+
+        {/* Subtitles toggle */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500 w-16 shrink-0">Legendas</span>
+          <button
             onClick={() => setWithSubtitles(!withSubtitles)}
             className={cn(
-              "w-9 h-5 rounded-full transition-colors relative",
+              "w-9 h-5 rounded-full transition-colors relative shrink-0",
               withSubtitles ? "bg-violet-600" : "bg-zinc-700"
             )}
           >
@@ -162,35 +230,67 @@ export default function ClipCard({ clip, filePath, transcript, index }: ClipCard
                 withSubtitles ? "translate-x-4" : "translate-x-0.5"
               )}
             />
-          </div>
-          <Subtitles size={14} />
-          Legendas
-        </label>
+          </button>
+          <span className="text-xs text-zinc-500">{withSubtitles ? "Ativadas" : "Desativadas"}</span>
+        </div>
 
+        {/* Overlay upload */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500 w-16 shrink-0">Faixa/Logo</span>
+          <input
+            ref={overlayInputRef}
+            type="file"
+            accept="image/png,image/webp"
+            className="hidden"
+            onChange={handleOverlayUpload}
+          />
+          {overlayBase64 ? (
+            <div className="flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300">
+              <ImageIcon size={12} className="text-violet-400" />
+              <span className="truncate max-w-[140px]">{overlayName}</span>
+              <button
+                onClick={() => { setOverlayBase64(null); setOverlayName(""); }}
+                className="text-zinc-500 hover:text-red-400 transition-colors ml-1"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => overlayInputRef.current?.click()}
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-violet-400 bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors border border-zinc-700"
+            >
+              <ImageIcon size={12} />
+              Adicionar PNG
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Generate button */}
+      <div className="border-t border-zinc-800 px-5 py-4">
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors"
         >
           {loading ? (
             <>
-              <Loader2 className="animate-spin" size={15} />
-              Gerando...
+              <Loader2 className="animate-spin" size={16} />
+              Gerando clipe...
             </>
           ) : (
             <>
-              <Download size={15} />
-              Gerar e Baixar
+              <Download size={16} />
+              Gerar e Baixar ({format})
             </>
           )}
         </button>
-      </div>
 
-      {error && (
-        <div className="px-5 pb-4">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
+        {error && (
+          <p className="text-red-400 text-xs mt-2 text-center">{error}</p>
+        )}
+      </div>
     </div>
   );
 }
