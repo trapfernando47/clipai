@@ -1,64 +1,176 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import VideoInput from "@/components/VideoInput";
+import AnalyzeButton from "@/components/AnalyzeButton";
+import ClipCard from "@/components/ClipCard";
+import { AnalysisResult } from "@/types";
+import { Scissors, Zap, RotateCcw, Clock } from "lucide-react";
 
 export default function Home() {
+  const [videoId, setVideoId] = useState<string | null>(null);
+  const [filePath, setFilePath] = useState<string | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [step, setStep] = useState<"input" | "analyze" | "results">("input");
+
+  const handleVideoReady = (id: string, path: string) => {
+    setVideoId(id);
+    setFilePath(path);
+    setStep("analyze");
+  };
+
+  const handleResult = (data: AnalysisResult) => {
+    setResult(data);
+    setStep("results");
+  };
+
+  const handleReset = () => {
+    setVideoId(null);
+    setFilePath(null);
+    setResult(null);
+    setStep("input");
+  };
+
+  const formatDuration = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}m ${sec}s`;
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {/* Header */}
+      <header className="border-b border-zinc-900 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+              <Scissors size={18} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-white font-bold text-lg leading-none">ClipAI</h1>
+              <p className="text-zinc-500 text-xs">Clipes virais com IA</p>
+            </div>
+          </div>
+
+          {step !== "input" && (
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <RotateCcw size={14} />
+              Novo vídeo
+            </button>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </header>
+
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* Step: Input */}
+        {step === "input" && (
+          <div className="flex flex-col items-center gap-10">
+            {/* Hero */}
+            <div className="text-center max-w-2xl">
+              <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-violet-400 text-sm mb-6">
+                <Zap size={13} />
+                Powered by GPT-4o + Whisper
+              </div>
+              <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
+                Transforme vídeos longos em{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400">
+                  clipes virais
+                </span>
+              </h2>
+              <p className="text-zinc-400 text-lg">
+                Faça upload de um vídeo ou cole um link do YouTube. A IA identifica os melhores momentos e gera clipes prontos para TikTok, Reels e Shorts.
+              </p>
+            </div>
+
+            {/* Features */}
+            <div className="grid grid-cols-3 gap-4 w-full max-w-2xl">
+              {[
+                { icon: "🎙️", title: "Transcrição automática", desc: "Whisper AI com alta precisão" },
+                { icon: "🧠", title: "Análise inteligente", desc: "GPT-4o identifica momentos virais" },
+                { icon: "✂️", title: "Corte preciso", desc: "FFmpeg com legendas automáticas" },
+              ].map((f) => (
+                <div key={f.title} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+                  <div className="text-2xl mb-2">{f.icon}</div>
+                  <p className="text-white text-sm font-medium">{f.title}</p>
+                  <p className="text-zinc-500 text-xs mt-1">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <VideoInput onVideoReady={handleVideoReady} />
+          </div>
+        )}
+
+        {/* Step: Analyze */}
+        {step === "analyze" && (
+          <div className="flex flex-col items-center gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">✅</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Vídeo pronto para análise</h2>
+              <p className="text-zinc-400">
+                Clique no botão abaixo para a IA analisar e encontrar os melhores momentos virais.
+              </p>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md">
+              <div className="flex items-center gap-3 text-sm text-zinc-400">
+                <Clock size={16} className="text-violet-400" />
+                <span>Tempo estimado: 1-3 minutos dependendo do tamanho do vídeo</span>
+              </div>
+            </div>
+
+            <AnalyzeButton
+              videoId={videoId!}
+              filePath={filePath!}
+              onResult={handleResult}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          </div>
+        )}
+
+        {/* Step: Results */}
+        {step === "results" && result && (
+          <div className="space-y-8">
+            {/* Summary */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  {result.clips.length} clipes encontrados
+                </h2>
+                <p className="text-zinc-400 mt-1">
+                  Vídeo de {formatDuration(result.videoDuration)} analisado com sucesso
+                </p>
+              </div>
+              <div className="text-right text-sm text-zinc-500">
+                {result.transcript.length} segmentos transcritos
+              </div>
+            </div>
+
+            {/* Clips Grid */}
+            <div className="grid gap-4">
+              {result.clips
+                .sort((a, b) => b.viralScore - a.viralScore)
+                .map((clip, i) => (
+                  <ClipCard
+                    key={clip.id}
+                    clip={clip}
+                    filePath={result.filePath as string}
+                    transcript={result.transcript}
+                    index={i}
+                  />
+                ))}
+            </div>
+
+            {/* Footer note */}
+            <p className="text-center text-zinc-600 text-sm">
+              Clique em "Gerar e Baixar" em cada clipe para processar e baixar o vídeo cortado.
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );
