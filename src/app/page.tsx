@@ -5,7 +5,7 @@ import VideoInput from "@/components/VideoInput";
 import AnalyzeButton from "@/components/AnalyzeButton";
 import ClipCard from "@/components/ClipCard";
 import { AnalysisResult } from "@/types";
-import { Scissors, Zap, RotateCcw, Clock } from "lucide-react";
+import { Zap, RotateCcw, Clock } from "lucide-react";
 
 export default function Home() {
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -38,21 +38,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Header */}
-      <header className="border-b border-zinc-900 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Scissors size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-lg leading-none">ClipAI</h1>
-              <p className="text-zinc-500 text-xs">Clipes virais com IA</p>
-            </div>
-          </div>
-
-          {step !== "input" && (
+    <div className="bg-zinc-950 text-white">
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* Reset button */}
+        {step !== "input" && (
+          <div className="flex justify-end mb-6">
             <button
               onClick={handleReset}
               className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
@@ -60,11 +50,8 @@ export default function Home() {
               <RotateCcw size={14} />
               Novo vídeo
             </button>
-          )}
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-6 py-12">
+          </div>
+        )}
         {/* Step: Input */}
         {step === "input" && (
           <div className="flex flex-col items-center gap-10">
